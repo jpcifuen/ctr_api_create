@@ -1,0 +1,38 @@
+
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: DockerInstaller@0
+  inputs:
+    dockerVersion: '17.09.0-ce'
+  displayName: 'Install Docker 17.09.0-ce'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      cd ctr_api_create
+      docker build -t ctr_api_create .
+  displayName: 'Docker Build'
+
+- task: ECRPushImage@1
+  inputs:
+    awsCredentials: 'JP_AWS'
+    regionName: 'us-east-1'
+    imageSource: 'imagename'
+    sourceImageName: 'ctr_api_create'
+    repositoryName: 'ctr_api_create'
+    autoCreateRepository: true
+- task: AWSShellScript@1
+  inputs:
+    awsCredentials: 'JP_AWS'
+    regionName: 'us-east-1'
+    scriptType: 'inline'
+    inlineScript: 
+      aws ecs update-service --cluster Dev_cluster --service service-backend-1 --force-new-deployment
+  displayName: 'New Service'
